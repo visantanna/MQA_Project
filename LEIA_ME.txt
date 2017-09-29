@@ -1,0 +1,21 @@
+Instruções basicas para se rodar o programa. O programa apenas rodará no seu computador se você tiver o R installado, para isso acesse o seguinte link: https://cloud.r-project.org/
+
+Após instalar não se esqueça de instalar os seguintes packages 
+
+  ggplot2
+  plyr
+  RColorBrewer
+
+para instalá-los  escreva as seguintes linhas de código no console (pressione enter entre elas)
+
+install.packages('ggplot2')
+install.packages('plyr')
+install.packages('RColorBrewer')
+
+após essas etapas você só precisará fazer uma chamada a função principal no console:
+
+Exemplo :
+
+trataCsv( '/home/vinicius/Desktop/R/dirty_deputies_v2.csv' , '/home/vinicius/Desktop/R/')
+
+Onde o primeiro argumento aponta para o csv com os dados dos deputados e o segundo aponta pra pasta em que você deseja que sejam salvos os gráficos plotados pelo programa.
