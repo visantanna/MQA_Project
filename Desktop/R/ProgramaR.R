@@ -69,6 +69,8 @@ trataCsv <- function(caminhoInput , caminhoOutput){
   
   dataSet$refund_date <- sapply(dataSet$refund_date , FUN =function(x) substr(x,0,7))
   
+  geraGraficoQtdLancamentos(dataSet)
+  
   for(var in unique(dataSet$refund_description) ){
     listaNomeCorruptos <- append(listaNomeCorruptos, geraGraficoGastosMesPorTipo(dataSet[dataSet$refund_description == var , ] , var))        
   }
@@ -97,8 +99,8 @@ trataCsv <- function(caminhoInput , caminhoOutput){
   
   
   ordemNatural<- c("Farleft","Leftwing" , "Centreleft" , "Centre to centreleft" , "Centre" , "Centre/Centreright" , "Centreright","Rightwing")
-  myplot<-ggplot(data = dataFrameStackedBar, aes(x = dataFrameStackedBar[,3], y = dataFrameStackedBar[,1], fill = dataFrameStackedBar[,2] )) + 
-    geom_bar(stat="identity") 
+  myplot<-ggplot(data = dataFrameStackedBar, aes(x = dataFrameStackedBar[,1], y =dataFrameStackedBar[,3] , fill = dataFrameStackedBar[,2] )) + 
+    geom_bar(stat="identity")+xlab("ideologia política")+ylab("Quantidade de políticos")+ggtitle("Políticos que mais gastam" , subtitle = "relacionado por ideologia e região de atuação")+labs(fill = "Regiões")+theme(axis.text.x = element_text(angle = 90, hjust = 1))
   ggsave('DeputadosPorRegiaoEPolitica.pdf')
 }
 
@@ -127,37 +129,58 @@ geraGraficoGastosMesPorTipo <- function(dataSet , tipoGasto){
   
   ##cria o gráfico
   ##forçando o ylim terminar como multiplo de 200
-  graficoBarras<-barplot(dataSetSomaMensal$x, ylim=c(0,(round((max(dataSetSomaMensal$x)/200) , 0 ))+1)*200 , main = paste("Gastos com " ,nomeDespesaPt )  , xlab = "Data" , names.arg = dataSet$Group.1)
+  graficoBarras<-barplot(dataSetSomaMensal$x, ylim=c(0,(round((max(dataSetSomaMensal$x)/200) , 0 ))+1)*200 , main = paste("Gastos com " ,nomeDespesaPt  ) 
+                         , xlab = "Data" , names.arg = dataSetSomaMensal$Group.1 , ylab = "reembolso/mês [milhares de R$]")
   text(x = graficoBarras ,  y = dataSetSomaMensal$x , label = dataSetSomaMensal$x , pos = 3 , cex = 0.7 , col= "red" )
+  ##abline(h= mean(dataSetSomaMensal$x) , col = "red")
+    
   dev.off()
   
   nomeDeputadosCorruptos <- geraBoxPlotGastoMensal(dataSetPorDeputado , nomeDespesaPt)
   
   return(nomeDeputadosCorruptos)
-  ##write.csv(dataSet, file = "Desktop/R/FuelCostByDeputyByMonth.csv");
 }
 
-geraGraficoQtdLancamentos <-function(){
-  dataSet <- read.csv("Desktop/R/dirty_deputies_v2.csv" , dec = "." , sep = "," , header = TRUE , na.strings = "", stringsAsFactors = FALSE)
+geraGraficoQtdLancamentos <-function(dataSet){
+  library(plotly)
+  f <- list(
+    family = "Courier New, monospace",
+    size = 18,
+    color = "#7f7f7f"
+  )
+  x <- list(
+    title = "",
+    titlefont = f
+  )
+  y <- list(
+    title = "",
+    titlefont = f
+  )
+  m <- list(
+    l = 50,
+    r = 50,
+    b = 100,
+    t = 100,
+    pad = 4
+  )
   
-  dataSet[c(2,3,5,6,9,10,11,12,13,14,15,16,17,18)] <- list(NULL);
-  
-  dataSet <- na.omit(dataSet);
-  
-  colunaDatas <- dataSet[3];
-  
-  dataSet$refund_date <- sapply(dataSet$refund_date , FUN =function(x) substr(x,0,7))
-  
+  t <- list(
+    family = "sans serif",
+    size = 10,
+    color = toRGB("grey50")
+  )
   qtdLancamentos <-table(dataSet$refund_date)
-  graficoBarras<-barplot( qtdLancamentos ,ylim=c(0,40000), main = "Quantidade de lançamentos por mês"   , xlab = "Data" )
-  legendas <- as.data.frame(qtdLancamentos)
-  text(x = graficoBarras ,  y = qtdLancamentos , label = legendas$Freq, pos = 3 , cex = 0.6 , col= "red" )
+  ##graficoBarras<-barplot( qtdLancamentos ,ylim=c(0,40000), main = "Quantidade de lançamentos por mês"   , xlab = "Data" )
+  tabelaLanc <- as.data.frame(qtdLancamentos)
+  
+  p <- plot_ly(dataSet, x = ~tabelaLanc$Var1, y = ~tabelaLanc$Freq, type = 'scatter', mode = 'lines+markers' ,showlegend = FALSE ,text=round(tabelaLanc$Freq/1000)) %>%
+    add_text(textfont = t, textposition = "top left") %>%
+    layout(title = "Quantidade de lançamentos por mês", xaxis = x , yaxis= y , margin = list(l = 50, r = 50, b = 100, t = 50, pad = 4) )
 }
 
 geraBoxPlotGastoMensal <-function(dataSet , nomeDespesas){
   ##Cria vetor com o nome dos outliers
   vetorDeNome = c()
-  ##dataSet <- read.csv("Desktop/R/FuelCostByDeputyByMonth.csv" , dec = "." , sep = "," , header = TRUE , na.strings = "", stringsAsFactors = FALSE)
   
   nomeArquivo <- paste(nomeDespesas,"/",nomeDespesas,'_boxPlot.pdf')
   nomeArquivo<- gsub(" " , "" , nomeArquivo , fixed = "TRUE")
@@ -165,7 +188,7 @@ geraBoxPlotGastoMensal <-function(dataSet , nomeDespesas){
   ##cria pdf com o grafico
   pdf(nomeArquivo)
   
-  boxplot <- boxplot(dataSet$x , main = append("Bloxplot de gasto com ", nomeDespesas)  ,  ylab="gasto em Reais por mês")
+  boxplot <- boxplot(dataSet$x , main = append("Bloxplot de gasto com ", nomeDespesas )  ,  ylab="Gasto [R$/mês]")
   
   dev.off()
   
