@@ -56,10 +56,10 @@ trataCsv <- function(caminhoInput , caminhoOutput){
   setwd(caminhoOutput)
   
   dataSet[c(3,5,6,9,10,11,12,13,14,15,16,17)] <- list(NULL);
-  tamanhoOriginal <- length(dataSet)
+  tamanhoOriginal <- length(dataSet[,1])
   
   dataSet <- na.omit(dataSet);
-  tamanhoSemNA <- length(dataSet)
+  tamanhoSemNA <- length(dataSet[,1])
   
   textoAdicional <- paste("Aproximadamente " ,tamanhoOriginal - tamanhoSemNA ,
                           "dos dados foram omitidos por estarem incompletos! portanto, nessas analises estamos trabalhando com apenas "
@@ -193,10 +193,12 @@ geraBoxPlotGastoMensal <-function(dataSet , nomeDespesas){
   dev.off()
   
   vetorDeNome <- c()
+  outlierSuperior <-boxplot$out
+  outlierSuperior <- outlierSuperior[outlierSuperior > mean(dataSet$x)]
   ##retorna todos os outliers
-  if(length(boxplot$out) > 0 ){
-    valorMinOutLiers <- min(boxplot$out)
-    dadoMensal<- dataSet[dataSet$x >= valorMinOutLiers ,]
+  if(length(outlierSuperior) > 0 ){
+    valorMinOutLiers <- min(outlierSuperior)
+    dadoMensal<- dataSet[dataSet$x >= valorMinOutLiers,]
     vetorDeNome<-append(vetorDeNome , unique(dadoMensal$Group.1))
   }
   return(vetorDeNome)
