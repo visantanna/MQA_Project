@@ -1,4 +1,6 @@
 trataCsv <- function(caminhoInput , caminhoOutput){
+  library(plyr)
+  library(ggplot2)
   listaNomeCorruptos <- c()
   tamanhoOriginal <- c()
   tamanhoSemNA  <-c()  
@@ -43,6 +45,7 @@ trataCsv <- function(caminhoInput , caminhoOutput){
       ,"MS", 	"CENTRO-OESTE" 
       ,"MT", 	"CENTRO-OESTE" 
       ,"ES", 	"SUDESTE" 
+      
       ,"MG", 	"SUDESTE" 
       ,"RJ", 	"SUDESTE" 
       ,"SP", 	"SUDESTE" 
@@ -73,10 +76,11 @@ trataCsv <- function(caminhoInput , caminhoOutput){
     ##reescreve o estado pela região
     dataSet[indiceEstado,]$deputy_state <- RegioesPorEstado[auxiliar,2]
     auxiliar = auxiliar +1
-  }
+  } 
   ##dataSet$refund_date <- substring(dataSet$refund_date , 1 ,7)
   
   dataSet <- aggregate(dataSet$refund_value , by = dataSet[,-4] , FUN = sum) 
+  
   
   ##relacionando partido e gasto com o método ANOVA
   anova_partido <- aov(dataSet$x ~ dataSet$party_pg)
@@ -85,6 +89,20 @@ trataCsv <- function(caminhoInput , caminhoOutput){
   ##relacionando regiao e gasto com o método ANOVA , teoricamente relevante (valor p baixo)
   anova_regiao <-aov(dataSet$x ~ dataSet$deputy_state)
   summary(anova_regiao)
+  TukeyHSD(anova_regiao)
+  
+  dataSetResumido <- ddply(dataSet , c("deputy_state") , summarize , MEDIA=mean(x/1000) , ERROPADRAO= sqrt(var(x/1000)/length(x)))
+  
+  dataSetResumido$deputy_state <- reorder(dataSetResumido$deputy_state , dataSetResumido$MEDIA)
+  
+  ggplot(dataSetResumido) + aes(x=deputy_state , y = MEDIA , colour=deputy_state) +
+    geom_point()+ geom_errorbar(aes(ymax =MEDIA+ERROPADRAO , ymin=MEDIA-ERROPADRAO)) +
+    labs(colour = "Regiões" , y="Valor médio de Gastos [milhares de R$]" , 
+    x= "Região do País" , title = "Gasto médio de deputados por Região")+
+    theme(axis.text.x=element_text(size=14) , axis.text.y=element_text(size=14), 
+    plot.title = element_text(size=20 ,face ="bold" , hjust = 0.5), 
+    axis.title.x = element_text(size = 16), 
+    axis.title.y = element_text(size = 16))
   
   ##relacionando posicão política e gasto com o método ANOVA
   anova_posicao <-aov(dataSet$x ~ dataSet$party_position)
